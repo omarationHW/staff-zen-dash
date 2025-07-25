@@ -59,31 +59,60 @@ export function ResumenGeneral() {
     
     console.log('Fetching data for month:', mes);
     console.log('API Endpoint:', API_ENDPOINT);
-    console.log('Request body:', { op: "0", mes: mes });
+    
+    // Verificar si el token ha expirado
+    try {
+      const tokenPayload = JSON.parse(atob(API_TOKEN.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      console.log('Token exp:', tokenPayload.exp, 'Current time:', currentTime);
+      console.log('Token expired?', currentTime > tokenPayload.exp);
+    } catch (e) {
+      console.error('Error parsing token:', e);
+    }
+    
+    const requestBody = {
+      op: "0",
+      mes: mes
+    };
+    
+    console.log('Request body:', requestBody);
     
     try {
-      const requestBody = {
-        op: "0",
-        mes: mes
+      console.log('Making fetch request...');
+      
+      // Intentar con diferentes configuraciones de headers
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_TOKEN}`,
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; Dashboard/1.0)'
       };
       
-      console.log('Making fetch request...');
+      console.log('Request headers:', headers);
+      
       const response = await fetch(API_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_TOKEN}`
-        },
-        body: JSON.stringify(requestBody)
+        headers: headers,
+        body: JSON.stringify(requestBody),
+        mode: 'cors' // Explicitly set CORS mode
       });
 
       console.log('Response status:', response.status);
       console.log('Response statusText:', response.statusText);
-      console.log('Response headers:', response.headers);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response body:', errorText);
+        
+        // Try to get more details from the response
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('Error JSON:', errorJson);
+        } catch (parseError) {
+          console.log('Error response is not JSON');
+        }
+        
         throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
