@@ -45,6 +45,9 @@ const incidenciasDistribucion = [
 ];
 
 export function ResumenGeneral() {
+  console.log('ResumenGeneral component loading...');
+  console.log('nominaData:', nominaData);
+  
   const [selectedMonth, setSelectedMonth] = useState("1");
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
