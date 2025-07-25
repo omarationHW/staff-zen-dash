@@ -57,30 +57,59 @@ export function ResumenGeneral() {
     setLoading(true);
     setError(null);
     
+    console.log('Fetching data for month:', mes);
+    console.log('API Endpoint:', API_ENDPOINT);
+    console.log('Request body:', { op: "0", mes: mes });
+    
     try {
+      const requestBody = {
+        op: "0",
+        mes: mes
+      };
+      
+      console.log('Making fetch request...');
       const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_TOKEN}`
         },
-        body: JSON.stringify({
-          op: "0",
-          mes: mes
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response statusText:', response.statusText);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
-      const data: ApiResponse[] = await response.json();
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let data: ApiResponse[];
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed data:', data);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('Invalid JSON response from server');
+      }
+      
       if (data && data.length > 0) {
+        console.log('Setting API data:', data[0]);
         setApiData(data[0]);
+      } else {
+        console.warn('No data received from API');
+        setError('No data received from API');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar datos');
-      console.error('Error fetching dashboard data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar datos';
+      console.error('Fetch error:', err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
