@@ -72,7 +72,7 @@ export function ResumenGeneral() {
     
     const requestBody = {
       op: "0",
-      mes: mes
+      mes: mes // Primero intentar como string
     };
     
     console.log('Request body:', requestBody);
@@ -80,12 +80,10 @@ export function ResumenGeneral() {
     try {
       console.log('Making fetch request...');
       
-      // Intentar con diferentes configuraciones de headers
+      // Intentar con headers mínimos como en el código C#
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_TOKEN}`,
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; Dashboard/1.0)'
+        'Authorization': `Bearer ${API_TOKEN}`
       };
       
       console.log('Request headers:', headers);
@@ -93,14 +91,51 @@ export function ResumenGeneral() {
       const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(requestBody),
-        mode: 'cors' // Explicitly set CORS mode
+        body: JSON.stringify(requestBody)
       });
 
       console.log('Response status:', response.status);
       console.log('Response statusText:', response.statusText);
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
+      // Si falla con string, intentar con número
+      if (!response.ok && response.status === 500) {
+        console.log('Retrying with mes as number...');
+        
+        const requestBodyWithNumber = {
+          op: "0", 
+          mes: parseInt(mes) // Convertir a número
+        };
+        
+        console.log('Retry request body:', requestBodyWithNumber);
+        
+        const retryResponse = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(requestBodyWithNumber)
+        });
+        
+        console.log('Retry response status:', retryResponse.status);
+        
+        if (retryResponse.ok) {
+          const responseText = await retryResponse.text();
+          console.log('Retry raw response:', responseText);
+          
+          if (responseText.trim()) {
+            const data: ApiResponse[] = JSON.parse(responseText);
+            console.log('Retry parsed data:', data);
+            
+            if (data && data.length > 0) {
+              console.log('Setting API data from retry:', data[0]);
+              setApiData(data[0]);
+              return; // Salir exitosamente
+            }
+          }
+        }
+      }
+
+      
+      // Procesar respuesta original si no fue exitoso el retry
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response body:', errorText);
