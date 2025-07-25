@@ -122,13 +122,20 @@ export function ResumenGeneral() {
           console.log('Retry raw response:', responseText);
           
           if (responseText.trim()) {
-            const data: ApiResponse[] = JSON.parse(responseText);
-            console.log('Retry parsed data:', data);
-            
-            if (data && data.length > 0) {
-              console.log('Setting API data from retry:', data[0]);
-              setApiData(data[0]);
-              return; // Salir exitosamente
+            try {
+              const data: ApiResponse[] = JSON.parse(responseText);
+              console.log('Retry parsed data:', data);
+              
+              // Tomar el primer elemento del array si existe
+              if (Array.isArray(data) && data.length > 0) {
+                console.log('Setting API data from retry (first element):', data[0]);
+                setApiData(data[0]);
+                return; // Salir exitosamente
+              } else {
+                console.warn('Retry: No data in array or not an array');
+              }
+            } catch (parseError) {
+              console.error('Retry JSON parse error:', parseError);
             }
           }
         }
@@ -154,21 +161,27 @@ export function ResumenGeneral() {
       const responseText = await response.text();
       console.log('Raw response:', responseText);
       
-      let data: ApiResponse[];
-      try {
-        data = JSON.parse(responseText);
-        console.log('Parsed data:', data);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        throw new Error('Invalid JSON response from server');
-      }
-      
-      if (data && data.length > 0) {
-        console.log('Setting API data:', data[0]);
-        setApiData(data[0]);
+      if (responseText.trim()) {
+        let data: ApiResponse[];
+        try {
+          data = JSON.parse(responseText);
+          console.log('Parsed data:', data);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          throw new Error('Invalid JSON response from server');
+        }
+        
+        // Tomar el primer elemento del array si existe
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('Setting API data (first element):', data[0]);
+          setApiData(data[0]);
+        } else {
+          console.warn('No data in array or not an array');
+          setError('No data received from API');
+        }
       } else {
-        console.warn('No data received from API');
-        setError('No data received from API');
+        console.warn('Empty response from server');
+        setError('Empty response from server');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar datos';
